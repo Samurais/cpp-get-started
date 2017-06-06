@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <set>
 #include <unistd.h>
 #include <stdio.h>
 
@@ -11,9 +12,14 @@ class KVStore
 {
 public:
     KVStore(const string filePath): _filepath(filePath) {
+        _store = new std::map<string, string>();
     }
 
     ~KVStore(){
+        std::cout << "Deconstruct ... backup kv first.";
+        // backup to local file
+        dump(_filepath + ".backup");
+        delete _store;
     }
 
     void load(){
@@ -24,20 +30,25 @@ public:
         {
             // process pair (a,b)
             std::cout << "first number:" << a << " second number:" << b << std::endl;
-            _store[a] = b;
+            (*_store)[a] = b;
         }
     }
 
     std::string get(const std::string key){
-        return _store[key];
+        return (*_store)[key];
     }
 
     void set(const std::string key, const std::string val){
-        _store[key] = val;
+        (*_store)[key] = val;
     }
 
-    std::map<string, string> fetchAll(){
-        return _store;
+    std::set<std::string> keys(){
+        std::set<std::string> keys;
+        std::map<string, string>::iterator it = _store->begin();
+        for(; it != _store->end(); ++it){
+            keys.insert(it->first );
+        }
+        return keys;
     }
 
     void dump(const string path){
@@ -46,8 +57,8 @@ public:
         saved.open(path.c_str());
         
         // write data
-        std::map<string, string>::iterator it = _store.begin();
-        for(; it != _store.end(); ++it){
+        std::map<string, string>::iterator it = _store->begin();
+        for(; it != _store->end(); ++it){
             std::cout<< "Key: " <<  it->first 
                     << " Value: " << it->second << std::endl;
             saved << it->first << " ++$++ " << it->second << '\n';
@@ -57,9 +68,14 @@ public:
         saved.close();
     }
 
+protected:
+    std::map<string, string>* fetchAll(){
+        return _store;
+    }
+
 private:
     string _filepath;
-    std::map<string, string> _store;
+    std::map<string, string> *_store;
 };
 
 std::string getCurrentPath(){
@@ -79,28 +95,20 @@ int main(int argc, char const *argv[])
     // read file
     KVStore f(basePath + "/numbers.txt");
     f.load();
-    std::map<string, string> result = f.fetchAll();
-    
-    // print file
-    std::cout << "Iter result as a map" << std::endl;
-    std::map<string, string>::iterator it = result.begin();
-
-    for(; it != result.end(); ++it)
-        std::cout<< "Key: " <<  it->first 
-                << " Value: " << it->second << std::endl;
-
-    // get value by key
-    std::cout << "Get value by key(1), result:" << result["1"] << std::endl;
-
-    // change value by key, note, this is not changed the Store value inside Object f.
-    result["1"] = "0";
-    std::cout << "After update value by key(1), result:" << result["1"] << std::endl;
 
     // change obj f's value by key
     f.set("1", "5");
 
+    // print keys
+    std::set<std::string> keys = f.keys();
+    std::set<std::string>::iterator it = keys.begin();
+    std::cout<< "Keys:" <<std::endl;
+    for(; it != keys.end(); ++it){
+        std::cout << "- Key: " << *it << std::endl;
+    }
+
     // dump to file
-    f.dump(basePath + "/numbers.dump.txt");
+    f.dump(basePath + "/numbers.dump.v2.txt");
 
     std::cout << "End." << std::endl;
     return 0;
