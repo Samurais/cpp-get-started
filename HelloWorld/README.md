@@ -1,5 +1,16 @@
 # Welcome
-Get started with C++.
+Get started with C++ with CMake.
+
+## Usage
+```
+rm -rf cmake-build-debug
+./build.sh
+./start.sh
+```
+
+## Application
+Provide REST API.
+http://pistache.io/
 
 
 ## Build
@@ -25,6 +36,7 @@ ExternalProject_Add(
 target_link_libraries(MyTarget PRIVATE Library1)
 ```
 
-
 ## Package Module
+
+
 
